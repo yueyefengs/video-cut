@@ -64,7 +64,7 @@ input/broll/
 
 > 文件名即语义——Claude 靠文件名匹配段落，命名越描述性，匹配越准确。
 
-**4. 在 Claude Code 里开始**
+**4. 安装 skill**
 
 **Claude Code**
 
@@ -76,8 +76,6 @@ cp -r skills/video-cut ~/.claude/skills/
 ln -s "$(pwd)/skills/video-cut" ~/.claude/skills/video-cut
 ```
 
-安装后在 Claude Code 里输入 `/video-cut` 即可启动工作流。
-
 **Codex**
 
 ```bash
@@ -88,7 +86,26 @@ cp -r skills/video-cut ~/.codex/skills/
 ln -s "$(pwd)/skills/video-cut" ~/.codex/skills/video-cut
 ```
 
-安装后在 Codex 里输入 `/video-cut` 启动。
+---
+
+**5. 在 Claude Code 里使用**
+
+在项目目录下打开 Claude Code：
+
+```bash
+cd ~/code/video-cut
+claude
+```
+
+输入 `/video-cut` 启动工作流，Claude 会引导你完成以下步骤：
+
+1. **发送文案** — 把口播文案粘贴给 Claude，它会分析字数、结构和潜在问题
+2. **（可选）内容优化** — 若安装了 `dbs` 套件，可运行 `/dbs-hook` 优化开头或 `/dbs-content` 做五维诊断
+3. **确认分段方案** — Claude 展示 N 段划分 + 每段对应的 B-roll，你确认后才开始合成
+4. **TTS 合成** — 逐段生成语音，报告每段时长
+5. **渲染 + 拼接** — 自动完成，输出 `edit/final.mp4`
+
+> **注意**：skill 需要 Claude Code CLI（`claude` 命令），不支持 Claude.ai 网页版。
 
 ---
 
