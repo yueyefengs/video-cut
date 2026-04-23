@@ -31,6 +31,20 @@ CHARS_PER_LINE = 8   # characters per subtitle line (tune for pacing)
 MIN_LINE_DUR   = 0.4  # minimum seconds per line
 
 
+def _read_env() -> dict[str, str]:
+    env_path = Path(__file__).parent.parent / ".env"
+    env: dict[str, str] = {}
+    if not env_path.exists():
+        return env
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, _, v = line.partition("=")
+        env[k.strip()] = v.split("#")[0].strip()
+    return env
+
+
 def probe_duration(path: Path) -> float:
     out = subprocess.check_output([
         "ffprobe", "-v", "quiet", "-print_format", "json",
@@ -125,6 +139,9 @@ def build_srt_for_segment(
 
 
 def main() -> None:
+    env = _read_env()
+    env_chars = int(env.get("SUBTITLE_CHARS_PER_LINE", CHARS_PER_LINE))
+
     ap = argparse.ArgumentParser(description="Generate SRT from script text + audio duration")
     text_grp = ap.add_mutually_exclusive_group(required=True)
     text_grp.add_argument("--text", type=str, help="Script text")
@@ -133,13 +150,15 @@ def main() -> None:
     dur_grp.add_argument("--duration", type=float, help="Audio duration in seconds")
     dur_grp.add_argument("--audio", type=Path, help="Audio file (duration probed via ffprobe)")
     ap.add_argument("--output", "-o", type=Path, required=True)
-    ap.add_argument("--chars-per-line", type=int, default=CHARS_PER_LINE)
+    ap.add_argument("--chars-per-line", type=int, default=None,
+                    help=f"Characters per subtitle line (env: SUBTITLE_CHARS_PER_LINE, default: {CHARS_PER_LINE})")
     args = ap.parse_args()
 
+    chars_per_line = args.chars_per_line if args.chars_per_line is not None else env_chars
     text = args.text or args.text_file.read_text(encoding="utf-8").strip()
     duration = args.duration if args.duration else probe_duration(args.audio.resolve())
 
-    srt = text_to_srt(text, duration, args.chars_per_line)
+    srt = text_to_srt(text, duration, chars_per_line)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(srt, encoding="utf-8")
     print(f"saved: {args.output}")

@@ -32,13 +32,36 @@ import tempfile
 from pathlib import Path
 
 
-# Subtitle style matching compose_narration in video-use
-FORCE_STYLE = (
-    "FontName=PingFang SC,FontSize=42,Bold=1,"
-    "PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,"
-    "BorderStyle=1,Outline=4,Shadow=0,"
-    "Alignment=2,MarginV=80"
-)
+def _read_env() -> dict[str, str]:
+    env_path = Path(__file__).parent.parent / ".env"
+    env: dict[str, str] = {}
+    if not env_path.exists():
+        return env
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, _, v = line.partition("=")
+        env[k.strip()] = v.split("#")[0].strip()
+    return env
+
+
+def _build_force_style(
+    font_name: str,
+    font_size: int,
+    bold: int,
+    color: str,
+    outline_color: str,
+    outline: int,
+    margin_v: int,
+    alignment: int,
+) -> str:
+    return (
+        f"FontName={font_name},FontSize={font_size},Bold={bold},"
+        f"PrimaryColour={color},OutlineColour={outline_color},"
+        f"BorderStyle=1,Outline={outline},Shadow=0,"
+        f"Alignment={alignment},MarginV={margin_v}"
+    )
 
 
 def _run(cmd: list[str], label: str = "") -> None:
@@ -146,11 +169,11 @@ def concat_clips(clips: list[Path], out_path: Path) -> None:
     print(f"  concat → {out_path.name}")
 
 
-def burn_subtitles(base: Path, srt_path: Path, out_path: Path) -> None:
+def burn_subtitles(base: Path, srt_path: Path, out_path: Path, force_style: str) -> None:
     srt_escaped = str(srt_path.resolve()).replace("\\", "/").replace(":", r"\:")
     _run([
         "ffmpeg", "-y", "-i", str(base),
-        "-vf", f"subtitles=filename={srt_escaped}:force_style='{FORCE_STYLE}'",
+        "-vf", f"subtitles=filename={srt_escaped}:force_style='{force_style}'",
         "-c:v", "libx264", "-preset", "fast", "-crf", "18",
         "-c:a", "copy", "-movflags", "+faststart",
         str(out_path),
@@ -217,6 +240,7 @@ def build_final(
     preview: bool = False,
     no_subtitles: bool = False,
     no_loudnorm: bool = False,
+    force_style: str = "",
 ) -> None:
     edit_dir = output_path.parent
 
@@ -240,7 +264,7 @@ def build_final(
         # 3. Burn subtitles LAST
         if has_srt:
             subbed = tmp_dir / "subbed.mp4"
-            burn_subtitles(base, srt_path, subbed)
+            burn_subtitles(base, srt_path, subbed, force_style)
             pre_norm = subbed
         else:
             pre_norm = base
@@ -256,6 +280,8 @@ def build_final(
 
 
 def main() -> None:
+    env = _read_env()
+
     ap = argparse.ArgumentParser(description="Concat segments + subtitles → final")
     group = ap.add_mutually_exclusive_group(required=True)
     group.add_argument("--clips", nargs="+", type=Path, help="Ordered list of segment MP4s")
@@ -266,7 +292,35 @@ def main() -> None:
     ap.add_argument("--preview", action="store_true")
     ap.add_argument("--no-subtitles", action="store_true")
     ap.add_argument("--no-loudnorm", action="store_true")
+    # Subtitle style — CLI overrides .env, .env overrides hardcoded defaults
+    ap.add_argument("--font-name",      default=None)
+    ap.add_argument("--font-size",      default=None, type=int)
+    ap.add_argument("--bold",           default=None, type=int, choices=[0, 1])
+    ap.add_argument("--color",          default=None, help="ASS hex, e.g. &H00FFFFFF")
+    ap.add_argument("--outline-color",  default=None, help="ASS hex, e.g. &H00000000")
+    ap.add_argument("--outline",        default=None, type=int)
+    ap.add_argument("--margin-v",       default=None, type=int)
+    ap.add_argument("--alignment",      default=None, type=int)
     args = ap.parse_args()
+
+    def _get(cli_val, env_key, default):
+        if cli_val is not None:
+            return cli_val
+        raw = env.get(env_key)
+        if raw is not None:
+            return type(default)(raw) if not isinstance(default, str) else raw
+        return default
+
+    force_style = _build_force_style(
+        font_name    = _get(args.font_name,     "SUBTITLE_FONT_NAME",     "PingFang SC"),
+        font_size    = _get(args.font_size,     "SUBTITLE_FONT_SIZE",     42),
+        bold         = _get(args.bold,          "SUBTITLE_BOLD",          1),
+        color        = _get(args.color,         "SUBTITLE_COLOR",         "&H00FFFFFF"),
+        outline_color= _get(args.outline_color, "SUBTITLE_OUTLINE_COLOR", "&H00000000"),
+        outline      = _get(args.outline,       "SUBTITLE_OUTLINE",       4),
+        margin_v     = _get(args.margin_v,      "SUBTITLE_MARGIN_V",      80),
+        alignment    = _get(args.alignment,     "SUBTITLE_ALIGNMENT",     2),
+    )
 
     if args.clips_dir:
         clips = sorted(args.clips_dir.glob("seg_*.mp4"))
@@ -282,6 +336,7 @@ def main() -> None:
         preview=args.preview,
         no_subtitles=args.no_subtitles,
         no_loudnorm=args.no_loudnorm,
+        force_style=force_style,
     )
 
 
