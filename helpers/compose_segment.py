@@ -77,7 +77,7 @@ def compose_segment(
                 "-ss", "0", "-i", str(broll_path),
                 "-t", f"{fill_duration:.3f}",
                 "-vf", scale,
-                "-c:v", "libx264", "-preset", "fast", "-crf", "23", "-an",
+                "-c:v", "libx264", "-preset", "fast", "-crf", crf, "-an",
                 str(broll_scaled),
             ], "broll scale")
         else:
@@ -101,7 +101,7 @@ def compose_segment(
                 "ffmpeg", "-y",
                 "-f", "concat", "-safe", "0", "-i", str(concat_list),
                 "-vf", scale,
-                "-c:v", "libx264", "-preset", "fast", "-crf", "23", "-an",
+                "-c:v", "libx264", "-preset", "fast", "-crf", crf, "-an",
                 str(broll_concat),
             ], "broll loop+scale")
             broll_scaled = broll_concat

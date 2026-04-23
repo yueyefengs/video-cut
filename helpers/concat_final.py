@@ -83,10 +83,14 @@ def merge_srt_files(clips: list[Path], srt_dir: Path | None, out_path: Path) -> 
     all_blocks: list[str] = []
     offset = 0.0
     cue_idx = 1
+    missing: list[str] = []
 
     for clip in clips:
         srt_path = srt_dir / f"{clip.stem}.srt"
         clip_dur = probe_duration(clip)
+
+        if not srt_path.exists():
+            missing.append(clip.stem)
 
         if srt_path.exists():
             raw = srt_path.read_text(encoding="utf-8")
@@ -112,6 +116,9 @@ def merge_srt_files(clips: list[Path], srt_dir: Path | None, out_path: Path) -> 
                 cue_idx += 1
 
         offset += clip_dur
+
+    if missing:
+        print(f"  [WARNING] 以下段落缺少 SRT 文件: {', '.join(missing)}", file=sys.stderr)
 
     if not all_blocks:
         return False
@@ -223,6 +230,12 @@ def build_final(
         # 2. Build master SRT from per-segment SRTs
         srt_path = edit_dir / "master.srt"
         has_srt = (not no_subtitles) and merge_srt_files(clips, srt_dir, srt_path)
+
+        if not has_srt and not no_subtitles:
+            sys.exit(
+                "\n[ERROR] 字幕未生成：--srt-dir 缺失、目录不存在或 SRT 文件不完整。\n"
+                "确认本次不需要字幕请加 --no-subtitles 参数。"
+            )
 
         # 3. Burn subtitles LAST
         if has_srt:

@@ -11,8 +11,6 @@
 ```
 口播文案
   ↓
-(可选) dbs-hook 优化开头 / dbs-content 内容诊断
-  ↓
 Claude 自动分段 + 按 B-roll 文件名语义匹配
   ↓
 逐段 TTS 合成（阿里云 qwen3-tts-flash）
@@ -80,6 +78,7 @@ input/broll/
 | `helpers/subtitles.py` | 文案文本 + 音频时长 → SRT 字幕 |
 | `helpers/compose_segment.py` | 单段 B-roll + TTS → MP4 |
 | `helpers/concat_final.py` | 拼接所有段落 + 字幕 + loudnorm |
+| `helpers/asr.py` | ⚠️ 实验性备用：Paraformer v2 转录（需 Qiniu，不在主流程） |
 
 **单独使用：**
 
@@ -112,14 +111,14 @@ python helpers/concat_final.py \
 
 ---
 
-## 与 dbs 集成
+## 与 dbs 集成（可选，按需检测）
 
-工作流内置对 [dontbesilent](https://github.com/dontbesilent) 系列 skill 的可选调用：
+若当前 Claude Code 环境安装了 [dontbesilent](https://github.com/dontbesilent) skill 套件，工作流会在 Phase 2 自动检测并提供：
 
 - **`/dbs-hook`** — 诊断开头，生成 10-15 个优化方案
 - **`/dbs-content`** — 五维诊断：文字洁癖、封面/标题、表达效率、认知落差、AI 辅助建议
 
-两步均可跳过，直接进入 TTS 合成。
+未安装时 Phase 2 静默跳过，不影响主流程。
 
 ---
 

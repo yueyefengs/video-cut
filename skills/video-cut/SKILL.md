@@ -16,7 +16,7 @@
 ~/code/video-cut/
 ├── helpers/
 │   ├── tts.py                # Ali qwen3-tts-flash 语音合成
-│   ├── asr.py                # Paraformer v2 转录（字幕时间戳）
+│   ├── subtitles.py          # 按文案文本估算 SRT（无需 ASR）
 │   ├── compose_segment.py    # 单段：B-roll + TTS → MP4
 │   └── concat_final.py       # 拼接 + 字幕 → final.mp4
 ├── input/
@@ -25,7 +25,7 @@
 │   ├── project.md            # 会话记录（每次追加）
 │   ├── segments.json         # 分段 + B-roll 匹配决策
 │   ├── segments/             # 逐段 TTS 音频
-│   ├── transcripts/          # 逐段 ASR 转录 JSON（字幕用）
+│   ├── transcripts/          # 逐段字幕 SRT（按文案文本估算时间戳）
 │   ├── clips/                # 逐段渲染 MP4
 │   ├── master.srt            # 最终字幕文件
 │   └── final.mp4             # 最终输出
@@ -40,7 +40,7 @@
 ### Phase 0：启动检查
 
 1. 读 `edit/project.md`（如果存在），一句话总结上次进度。
-2. 确认 `.env` 包含 `DASHSCOPE_API_KEY`。字幕功能还需要 Qiniu 配置（可选）。
+2. 确认 `.env` 包含 `DASHSCOPE_API_KEY`。
 
 ---
 
@@ -56,22 +56,29 @@
 
 ---
 
-### Phase 2：内容优化（可选）
+### Phase 2：内容优化（按已安装 skill 条件触发）
 
-**直接告知用户两个可选项，让他选择是否跳过：**
+**先检查当前会话的可用 skill 列表（system-reminder 中的 available skills）：**
+
+- 若列表包含 `dbs:dbs-hook` → `hook_available = true`
+- 若列表包含 `dbs:dbs-content` → `content_available = true`
+
+**若两者都不可用：** 静默跳过本阶段，不向用户提及，直接进入 Phase 3。
+
+**若至少一个可用：** 告知用户哪些诊断工具可用，询问是否运行：
 
 ```
-可选：
-  1. /dbs-hook — 诊断开头，生成 10-15 个优化方案
-  2. /dbs-content — 五维诊断内容质量（文字洁癖、封面、表达效率、认知落差等）
+检测到以下内容优化工具：
+  [如果可用] 1. /dbs-hook — 诊断开头，生成 10-15 个优化方案
+  [如果可用] 2. /dbs-content — 五维诊断（文字洁癖、封面、表达效率、认知落差等）
 
 输入「跳过」直接进入下一步。
 ```
 
-如果用户选择优化：
-- 调用 `/dbs-hook`：把文案传给 skill，等用户确认最终开头
-- 调用 `/dbs-content`：诊断内容，等用户确认是否修改
-- 用户确认最终文案后，继续下一步
+用户选择后：
+- 若选 dbs-hook：用 Skill 工具调用 `dbs:dbs-hook`，把文案作为输入，等用户确认最终开头后更新文案
+- 若选 dbs-content：用 Skill 工具调用 `dbs:dbs-content`，等用户确认是否修改文案
+- 用户确认最终文案后继续
 
 ---
 

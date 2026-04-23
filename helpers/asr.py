@@ -1,6 +1,13 @@
-"""Transcribe a WAV/audio file with Alibaba Cloud Paraformer v2 via DashScope.
+"""[实验性备用] 用 Alibaba Cloud Paraformer v2 转录音频，获取词级时间戳。
 
-Used to get word-level timestamps from TTS audio for subtitle generation.
+⚠️  此脚本不在主字幕流程中。主流程由 subtitles.py 完成（文案文本 + 音频时长估算，无需 ASR）。
+    仅在需要对外部素材做精确时间戳时手动调用。
+
+依赖（不在默认 pyproject.toml 中）：
+    pip install qiniu
+
+所需环境变量（.env 或系统环境）：
+    DASHSCOPE_API_KEY, QINIU_ACCESS_KEY, QINIU_SECRET_KEY, QINIU_BUCKET, QINIU_DOMAIN
 
 Flow:
   1. Upload WAV to Qiniu → get public URL
