@@ -66,7 +66,29 @@ input/broll/
 
 **4. 在 Claude Code 里开始**
 
-把 `skills/video-cut/SKILL.md` 注册为 skill，然后把口播文案发给 Claude，按引导完成流程。
+**Claude Code**
+
+```bash
+# 全局安装（推荐，任意目录可用）
+cp -r skills/video-cut ~/.claude/skills/
+
+# 或用符号链接（改动实时生效）
+ln -s "$(pwd)/skills/video-cut" ~/.claude/skills/video-cut
+```
+
+安装后在 Claude Code 里输入 `/video-cut` 即可启动工作流。
+
+**Codex**
+
+```bash
+# 全局安装
+cp -r skills/video-cut ~/.codex/skills/
+
+# 或符号链接
+ln -s "$(pwd)/skills/video-cut" ~/.codex/skills/video-cut
+```
+
+安装后在 Codex 里输入 `/video-cut` 启动。
 
 ---
 
