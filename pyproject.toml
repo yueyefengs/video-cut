@@ -1,0 +1,18 @@
+[project]
+name = "video-cut"
+version = "0.1.0"
+description = "Script-driven video editor: narration script + B-roll → final video"
+requires-python = ">=3.10"
+dependencies = [
+    "requests",
+    "qiniu",
+    "dashscope>=1.24.6",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["helpers*"]
