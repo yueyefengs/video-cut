@@ -5,7 +5,6 @@ description = "Script-driven video editor: narration script + B-roll → final v
 requires-python = ">=3.10"
 dependencies = [
     "requests",
-    "qiniu",
     "dashscope>=1.24.6",
 ]
 

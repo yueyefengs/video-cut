@@ -178,16 +178,19 @@ python helpers/compose_segment.py \
 
 ---
 
-### Phase 7：字幕转录（可选，需要 Qiniu 配置）
+### Phase 7：生成字幕（可选）
 
-如果用户需要字幕，对每段 TTS 音频做 ASR，获取词级时间戳：
+字幕不需要 ASR——我们已经有文案文本，只需要时间戳。
+对每段 TTS 音频，用文案文本 + 音频时长直接估算字幕时间：
 
 ```bash
-python helpers/asr.py edit/segments/seg_01.wav \
-    --out edit/transcripts/seg_01.json
+python helpers/subtitles.py \
+    --text "段落文本" \
+    --audio edit/segments/seg_01.wav \
+    --output edit/transcripts/seg_01.srt
 ```
 
-如果没有 Qiniu 配置，跳过字幕，告知用户。
+如果用户不需要字幕，跳过此步，`concat_final.py` 加 `--no-subtitles` 参数。
 
 ---
 
@@ -197,7 +200,7 @@ python helpers/asr.py edit/segments/seg_01.wav \
 # 有字幕
 python helpers/concat_final.py \
     --clips-dir edit/clips \
-    --transcripts-dir edit/transcripts \
+    --srt-dir edit/transcripts \
     --output edit/final.mp4
 
 # 无字幕
@@ -274,11 +277,10 @@ python helpers/concat_final.py --clips-dir edit/clips \
 ## .env 配置说明
 
 ```
-DASHSCOPE_API_KEY=sk-xxx          # 必须，TTS + ASR 都用
-QINIU_ACCESS_KEY=xxx              # 可选，字幕 ASR 需要
-QINIU_SECRET_KEY=xxx              # 可选
-QINIU_BUCKET=your-bucket          # 可选
-QINIU_DOMAIN=your-domain.com      # 可选
+DASHSCOPE_API_KEY=sk-xxx          # 必须，TTS 用
+
+# 字幕不依赖 Qiniu，直接从文案文本生成。
+# Qiniu 仅在需要对原始素材做 ASR 时才需要（video-cut 默认不需要）。
 ```
 
 ---
